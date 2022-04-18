@@ -26,7 +26,7 @@ You need [zig] to build this.
 ```
 git clone https://git.cypr.io/oz/mdstat.git
 cd mdstat
-zig build-exe -O ReleaseSafe mdstat.zig
+zig build -Drelease-safe=true
 ```
 
 

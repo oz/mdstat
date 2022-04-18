@@ -25,6 +25,7 @@ const Kind = std.fs.Dir.Entry.Kind;
 // unread email messages.
 const NewMailDir = "new/";
 const DirSep = "/";
+const MaxMaildirLen = 256;
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -53,8 +54,8 @@ pub fn main() !void {
 
 fn printSet(set: BufSet) !void {
     const stdout = std.io.getStdOut().writer();
-
     var itr = set.iterator();
+
     while (itr.next()) |mb| {
         try stdout.print("{s} ", .{mb.*});
     }
@@ -67,8 +68,8 @@ fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
     var dir = try std.fs.openDirAbsolute(path, .{ .iterate = true });
     var walker = try dir.walk(allocator);
     defer walker.deinit();
-
     var dirSet = BufSet.init(allocator);
+
     while (true) {
         var n = try walker.next();
         if (n == null) break;
@@ -93,13 +94,15 @@ fn explodeMailDirs(allocator: std.mem.Allocator, unreadDirs: BufSet) !BufSet {
     var unreads = BufSet.init(allocator);
     var itr = unreadDirs.iterator();
 
+    // XXX ok, I should just use an ArrayList. XD
+    var buf: [MaxMaildirLen]u8 = undefined;
+    var acc = buf[0..];
+
     while (itr.next()) |dir| {
         var parts = std.mem.split(u8, dir.*, DirSep);
-        var buf: [256]u8 = undefined;
-        var acc = buf[0..];
         var i: usize = 0;
         while (parts.next()) |part| {
-            if (i + part.len >= 256) return error.Overflow;
+            if (i + part.len >= MaxMaildirLen) return error.Overflow;
 
             if (i == 0) {
                 std.mem.copy(u8, acc[0..], "=");

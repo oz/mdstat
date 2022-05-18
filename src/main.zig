@@ -24,6 +24,7 @@ const Kind = std.fs.Dir.Entry.Kind;
 // MailDir uses "cur", "new", and "tmp" sub-folders. The "new" contains
 // unread email messages.
 const NewMailDir = "new/";
+const LiveMailDirSuffix = "/cur";
 const DirSep = "/";
 const MaxMaildirLen = 256;
 
@@ -60,6 +61,32 @@ fn printSet(set: BufSet) !void {
         try stdout.print("{s} ", .{mb.*});
     }
     return stdout.print("\n", .{});
+}
+
+// Find directories that looks like maildirs under a given path.
+fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
+    var dir = try std.fs.openDirAbsolute(path, .{ .iterate = true });
+    var walker = try dir.walk(allocator);
+    defer walker.deinit();
+    var dirSet = BufSet.init(allocator);
+
+    while (true) {
+        var n = try walker.next();
+        if (n == null) break;
+
+        var entry = n.?;
+        // Skip hidden nodes and look for directories.
+        if (entry.path[0] == '.' or entry.kind != Kind.Directory) continue;
+
+        // We look for folders where the last sub-folder name ends with
+        // "/cur" suffix, to decide it's a MailDir.
+        if (!std.mem.endsWith(u8, entry.path, LiveMailDirSuffix)) continue;
+
+        // Append the path up to LiveMailDirSuffix to a set.
+        const i = std.mem.indexOf(u8, entry.path, LiveMailDirSuffix).?;
+        try dirSet.insert(entry.path[0..i]);
+    }
+    return dirSet;
 }
 
 // Find directories that contains unread emails for a given MailDir

@@ -16,7 +16,8 @@ mdstat explodes the Maildir tree: if you file your wood-working news to
 
 Why? This makes mdstat a suitable command for (neo)mutt's
 `sidebar_whitelist` to display a *complete* tree down to unread
-directories.
+directories ; or simply to get a list of unread maildirs in a status
+program.
 
 
 # Building
@@ -29,6 +30,7 @@ cd mdstat
 zig build -Drelease-safe=true
 ```
 
+This should produce the mdstat binary at: `./zig-out/bin/mdstat`
 
 # Testing
 

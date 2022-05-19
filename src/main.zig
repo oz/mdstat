@@ -14,6 +14,8 @@
 // along with mdstat.  If not, see <https://www.gnu.org/licenses/>.
 
 const std = @import("std");
+const accord = @import("./vendor/accord/accord.zig");
+
 const os = std.os;
 const process = std.process;
 const BufSet = std.BufSet;
@@ -33,16 +35,19 @@ pub fn main() !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    // Get the MailDir path.
-    if (os.argv.len < 2) return printHelp();
-    var args = process.args();
-    _ = args.skip();
-    const root = try args.next(allocator) orelse {
-        std.log.warn("Expected first argument to be a path\n", .{});
-        return error.InvalidArgs;
-    };
+    // Parsing command-line flags with "accord".
+    var args_iterator = std.process.args();
+    const options = try accord.parse(&.{
+        accord.option('u', "", accord.Flag, {}, .{}), // -u
+        accord.option('h', "help", accord.Flag, {}, .{}), // -h or --help
+    }, allocator, &args_iterator);
+    defer options.positionals.deinit(allocator);
 
-    var dirSet = findUnreadDirs(allocator, root) catch |err| {
+    if (options.help or options.positionals.items.len < 2) return printHelp();
+    const root = options.positionals.items[1];
+
+    var finderFunc = if (options.u) findUnreadDirs else findMailDirs;
+    var dirSet = finderFunc(allocator, root) catch |err| {
         std.log.warn("Inspecting MailDir \"{s}\" failed: {}\n", .{ root, err });
         return error.Failure;
     };
@@ -151,7 +156,9 @@ fn explodeMailDirs(allocator: std.mem.Allocator, unreadDirs: BufSet) !BufSet {
 fn printHelp() !void {
     const stdout = std.io.getStdOut().writer();
     const usage =
-        \\ Usage: mdstat <maildir path> [options...]
+        \\Usage: mdstat <maildir path> [options...]
+        \\    -u   list unread
+        \\    -h   shows this
         \\
     ;
 

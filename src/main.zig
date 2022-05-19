@@ -46,34 +46,41 @@ pub fn main() !void {
     if (options.help or options.positionals.items.len < 2) return printHelp();
     const root = options.positionals.items[1];
 
-    var finderFunc = if (options.u) findUnreadDirs else findMailDirs;
-    var dirSet = finderFunc(allocator, root) catch |err| {
+    // Find Maildirs...
+    var finder_func = if (options.u) findUnreadDirs else findMailDirs;
+    var set = finder_func(allocator, root) catch |err| {
         std.log.warn("Inspecting MailDir \"{s}\" failed: {}\n", .{ root, err });
         return error.Failure;
     };
-    defer dirSet.deinit();
+    defer set.deinit();
 
-    var unreads = try explodeMailDirs(allocator, dirSet);
-    defer unreads.deinit();
-    return printSet(unreads);
+    // Explode the MailDir tree if we're showing only unreads. This is
+    // to make the maildir tree in neomutt's sidebar prettier.
+    if (options.u) {
+        var exploded = try explodeMailDirs(allocator, set);
+        defer exploded.deinit();
+        return printMailDirs(exploded);
+    }
+    return printMailDirs(set);
 }
 
-fn printSet(set: BufSet) !void {
+// Print a set of MailDirs to stdout.
+fn printMailDirs(set: BufSet) !void {
     const stdout = std.io.getStdOut().writer();
     var itr = set.iterator();
 
-    while (itr.next()) |mb| {
-        try stdout.print("{s} ", .{mb.*});
+    while (itr.next()) |md| {
+        try stdout.print("=\"{s}\" ", .{md.*});
     }
     return stdout.print("\n", .{});
 }
 
 // Find directories that looks like maildirs under a given path.
 fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.openDirAbsolute(path, .{ .iterate = true });
+    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
     var walker = try dir.walk(allocator);
     defer walker.deinit();
-    var dirSet = BufSet.init(allocator);
+    var set = BufSet.init(allocator);
 
     while (true) {
         var n = try walker.next();
@@ -89,18 +96,18 @@ fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 
         // Append the path up to LiveMailDirSuffix to a set.
         const i = std.mem.indexOf(u8, entry.path, LiveMailDirSuffix).?;
-        try dirSet.insert(entry.path[0..i]);
+        try set.insert(entry.path[0..i]);
     }
-    return dirSet;
+    return set;
 }
 
 // Find directories that contains unread emails for a given MailDir
 // path.
 fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.openDirAbsolute(path, .{ .iterate = true });
+    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
     var walker = try dir.walk(allocator);
     defer walker.deinit();
-    var dirSet = BufSet.init(allocator);
+    var set = BufSet.init(allocator);
 
     while (true) {
         var n = try walker.next();
@@ -115,18 +122,18 @@ fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 
         // Append the path up to "/{NewMailDir}" to a set.
         const i = std.mem.indexOf(u8, entry.path, NewMailDir).?;
-        try dirSet.insert(entry.path[0 .. i - 1]);
+        try set.insert(entry.path[0 .. i - 1]);
     }
-    return dirSet;
+    return set;
 }
 
-// Given a set of directories, build a list of MailDir names. MailDir
-// are exploded so that "a/b/c" yields {"=a", "=a/b", "=a/b/c"}.
-fn explodeMailDirs(allocator: std.mem.Allocator, unreadDirs: BufSet) !BufSet {
-    var unreads = BufSet.init(allocator);
-    var itr = unreadDirs.iterator();
+// Given a set of directory names, build a new set containing each level
+// of the directory tree, once: "a/b/c" yields {"a", "a/b", "/b/c"}.
+fn explodeMailDirs(allocator: std.mem.Allocator, dir_set: BufSet) !BufSet {
+    var exploded = BufSet.init(allocator);
+    var itr = dir_set.iterator();
 
-    // XXX ok, I should just use an ArrayList. XD
+    // XXX 256 characters are enough for most people, right? :D
     var buf: [MaxMaildirLen]u8 = undefined;
     var acc = buf[0..];
 
@@ -135,29 +142,23 @@ fn explodeMailDirs(allocator: std.mem.Allocator, unreadDirs: BufSet) !BufSet {
         var i: usize = 0;
         while (parts.next()) |part| {
             if (i + part.len >= MaxMaildirLen) return error.Overflow;
-
-            if (i == 0) {
-                std.mem.copy(u8, acc[0..], "=");
-                std.mem.copy(u8, acc[1..], part);
-                i += part.len + 1;
-                try unreads.insert(acc[0..i]);
-                continue;
+            if (i != 0) {
+                std.mem.copy(u8, acc[i..], "/");
+                i += 1;
             }
-            std.mem.copy(u8, acc[i..], "/");
-            i += 1;
             std.mem.copy(u8, acc[i..], part);
             i += part.len;
-            try unreads.insert(acc[0..i]);
+            try exploded.insert(acc[0..i]);
         }
     }
-    return unreads;
+    return exploded;
 }
 
 fn printHelp() !void {
     const stdout = std.io.getStdOut().writer();
     const usage =
         \\Usage: mdstat <maildir path> [options...]
-        \\    -u   list unread
+        \\    -u   list unread only, with all intermediate folders
         \\    -h   shows this
         \\
     ;

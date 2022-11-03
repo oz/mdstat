@@ -47,7 +47,7 @@ pub fn main() !void {
     const root = options.positionals.items[1];
 
     // Find Maildirs...
-    var finder_func = if (options.u) findUnreadDirs else findMailDirs;
+    var finder_func = if (options.u) &findUnreadDirs else &findMailDirs;
     var set = finder_func(allocator, root) catch |err| {
         std.log.warn("Inspecting MailDir \"{s}\" failed: {}\n", .{ root, err });
         return error.Failure;

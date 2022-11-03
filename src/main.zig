@@ -21,7 +21,7 @@ const process = std.process;
 const BufSet = std.BufSet;
 const sort = std.sort;
 const fmt = std.fmt;
-const Kind = std.fs.Dir.Entry.Kind;
+const Kind = std.fs.File.Kind;
 
 // MailDir uses "cur", "new", and "tmp" sub-folders. The "new" contains
 // unread email messages.

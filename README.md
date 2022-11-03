@@ -38,7 +38,7 @@ is `/` because I don't care about other separators, yet.
 
 # Building
 
-You need [zig] to build this.
+You need [zig] 0.10.x to build this.
 
 ```
 git clone https://git.cypr.io/oz/mdstat.git

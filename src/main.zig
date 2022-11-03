@@ -77,7 +77,7 @@ fn printMailDirs(set: BufSet) !void {
 
 // Find directories that looks like maildirs under a given path.
 fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
+    var dir = try std.fs.cwd().openIterableDir(path, .{});
     var walker = try dir.walk(allocator);
     defer walker.deinit();
     var set = BufSet.init(allocator);
@@ -104,7 +104,7 @@ fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 // Find directories that contains unread emails for a given MailDir
 // path.
 fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
+    var dir = try std.fs.cwd().openIterableDir(path, .{});
     var walker = try dir.walk(allocator);
     defer walker.deinit();
     var set = BufSet.init(allocator);

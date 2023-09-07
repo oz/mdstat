@@ -38,12 +38,12 @@ is `/` because I don't care about other separators, yet.
 
 # Building
 
-You need [zig] 0.10.x to build this.
+You need [zig] 0.11 to build this.
 
 ```
 git clone https://git.cypr.io/oz/mdstat.git
 cd mdstat
-zig build -Drelease-safe=true
+zig build -Doptimize=ReleaseSafe
 ```
 
 This should produce the mdstat binary at: `./zig-out/bin/mdstat`
@@ -62,6 +62,6 @@ tracker](https://git.cypr.io/oz/mdstat/issues).
 
 The GPL3 license.
 
-Copyright (c) 2022 Arnaud Berthomier
+Copyright (c) 2022-2023 Arnaud Berthomier
 
 [zig]: https://ziglang.org/

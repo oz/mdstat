@@ -88,7 +88,7 @@ fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 
         var entry = n.?;
         // Skip hidden nodes and look for directories.
-        if (entry.path[0] == '.' or entry.kind != Kind.Directory) continue;
+        if (entry.path[0] == '.' or entry.kind != Kind.directory) continue;
 
         // We look for folders where the last sub-folder name ends with
         // "/cur" suffix, to decide it's a MailDir.
@@ -115,7 +115,7 @@ fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 
         var entry = n.?;
         // Skip hidden nodes and look for files.
-        if (entry.path[0] == '.' or entry.kind != Kind.File) continue;
+        if (entry.path[0] == '.' or entry.kind != Kind.file) continue;
         // We look for the "new" Maildir sub-folder indicating unread
         // messages are present.
         if (!std.mem.containsAtLeast(u8, entry.path, 1, NewMailDir)) continue;

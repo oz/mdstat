@@ -16,7 +16,6 @@
 const std = @import("std");
 const accord = @import("./vendor/accord/accord.zig");
 
-const os = std.os;
 const process = std.process;
 const BufSet = std.BufSet;
 const sort = std.sort;
@@ -47,7 +46,7 @@ pub fn main() !void {
     const root = options.positionals.items[1];
 
     // Find Maildirs...
-    var finder_func = if (options.u) &findUnreadDirs else &findMailDirs;
+    const finder_func = if (options.u) &findUnreadDirs else &findMailDirs;
     var set = finder_func(allocator, root) catch |err| {
         std.log.warn("Inspecting MailDir \"{s}\" failed: {}\n", .{ root, err });
         return error.Failure;
@@ -77,13 +76,13 @@ fn printMailDirs(set: BufSet) !void {
 
 // Find directories that looks like maildirs under a given path.
 fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.cwd().openIterableDir(path, .{});
+    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
     var walker = try dir.walk(allocator);
     defer walker.deinit();
     var set = BufSet.init(allocator);
 
     while (true) {
-        var n = try walker.next();
+        const n = try walker.next();
         if (n == null) break;
 
         var entry = n.?;
@@ -104,13 +103,13 @@ fn findMailDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
 // Find directories that contains unread emails for a given MailDir
 // path.
 fn findUnreadDirs(allocator: std.mem.Allocator, path: []const u8) !BufSet {
-    var dir = try std.fs.cwd().openIterableDir(path, .{});
+    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
     var walker = try dir.walk(allocator);
     defer walker.deinit();
     var set = BufSet.init(allocator);
 
     while (true) {
-        var n = try walker.next();
+        const n = try walker.next();
         if (n == null) break;
 
         var entry = n.?;
@@ -143,10 +142,10 @@ fn explodeMailDirs(allocator: std.mem.Allocator, dir_set: BufSet) !BufSet {
         while (parts.next()) |part| {
             if (i + part.len >= MaxMaildirLen) return error.Overflow;
             if (i != 0) {
-                std.mem.copy(u8, acc[i..], "/");
+                @memcpy(acc[i..], "/");
                 i += 1;
             }
-            std.mem.copy(u8, acc[i..], part);
+            @memcpy(acc[i..], part);
             i += part.len;
             try exploded.insert(acc[0..i]);
         }
@@ -164,5 +163,5 @@ fn printHelp() !void {
     ;
 
     try stdout.print("{s}\n", .{usage});
-    return os.exit(1);
+    return process.exit(1);
 }

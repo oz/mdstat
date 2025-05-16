@@ -37,8 +37,8 @@ pub fn main() !void {
     // Parsing command-line flags with "accord".
     var args_iterator = std.process.args();
     const options = try accord.parse(&.{
-        accord.option('u', "", accord.Flag, {}, .{}), // -u
-        accord.option('h', "help", accord.Flag, {}, .{}), // -h or --help
+        accord.option('u', "", accord.Flag, false, .{}), // -u
+        accord.option('h', "help", accord.Flag, false, .{}), // -h or --help
     }, allocator, &args_iterator);
     defer options.positionals.deinit(allocator);
 

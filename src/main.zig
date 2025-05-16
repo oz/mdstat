@@ -137,7 +137,7 @@ fn explodeMailDirs(allocator: std.mem.Allocator, dir_set: BufSet) !BufSet {
     var acc = buf[0..];
 
     while (itr.next()) |dir| {
-        var parts = std.mem.split(u8, dir.*, DirSep);
+        var parts = std.mem.splitSequence(u8, dir.*, DirSep);
         var i: usize = 0;
         while (parts.next()) |part| {
             if (i + part.len >= MaxMaildirLen) return error.Overflow;

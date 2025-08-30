@@ -65,13 +65,17 @@ pub fn main() !void {
 
 // Print a set of MailDirs to stdout.
 fn printMailDirs(set: BufSet) !void {
-    const stdout = std.io.getStdOut().writer();
+    var buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&buffer);
+    const stdout = &stdout_writer.interface;
+
     var itr = set.iterator();
 
     while (itr.next()) |md| {
         try stdout.print("=\"{s}\" ", .{md.*});
     }
-    return stdout.print("\n", .{});
+    try stdout.print("\n", .{});
+    try stdout.flush();
 }
 
 // Find directories that looks like maildirs under a given path.
@@ -154,7 +158,9 @@ fn explodeMailDirs(allocator: std.mem.Allocator, dir_set: BufSet) !BufSet {
 }
 
 fn printHelp() !void {
-    const stdout = std.io.getStdOut().writer();
+    var buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&buffer);
+    const stdout = &stdout_writer.interface;
     const usage =
         \\Usage: mdstat <maildir path> [options...]
         \\    -u   list unread only, with all intermediate folders
@@ -163,5 +169,6 @@ fn printHelp() !void {
     ;
 
     try stdout.print("{s}\n", .{usage});
+    try stdout.flush();
     return process.exit(1);
 }

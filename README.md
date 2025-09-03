@@ -38,7 +38,7 @@ is `/` because I don't care about other separators, yet.
 
 # Building
 
-You need [zig] 0.12 to build this.
+You will need [zig] to build this, usually the latest stable release.
 
 ```
 git clone https://git.cypr.io/oz/mdstat.git
@@ -48,20 +48,15 @@ zig build -Doptimize=ReleaseSafe
 
 This should produce the mdstat binary at: `./zig-out/bin/mdstat`
 
-# Testing
-
-YOLO.
-
 # Bugs
 
 This program has bugs. If you find one, you can report it to `oz [@]
-cyprio.net`, or through the [issue
-tracker](https://git.cypr.io/oz/mdstat/issues).
+cyprio.net`, or through the [issue tracker](https://git.cypr.io/oz/mdstat/issues).
 
 # License
 
 The GPL3 license.
 
-Copyright (c) 2022-2023 Arnaud Berthomier
+Copyright (c) 2022-2025 Arnaud Berthomier
 
 [zig]: https://ziglang.org/

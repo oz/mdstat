@@ -1,0 +1,20 @@
+on: [push]
+jobs:
+  print-content:
+    runs-on: amd64
+    container:
+      image: node:lts-alpine
+    steps:
+      - name: install dependencies
+        run: apk add tar zig
+      - name: checkout code
+        uses: actions/checkout@v6
+      - name: restore zig cache
+        uses: actions/cache@v4
+        with:
+          path: .zig-cache
+          key: "${{ runner.os }}-zig-${{ hashFiles('build.zig.zon', 'build.zig') }}"
+          restore-keys: |
+             ${{ runner.os }}-zig-
+      - name: build mdstat
+        run: zig build -Doptimize=ReleaseSafe
